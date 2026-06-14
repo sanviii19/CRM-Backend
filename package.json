@@ -4,6 +4,7 @@
   "description": "Xeno Mini CRM — Backend API (Express + PostgreSQL + Prisma)",
   "main": "src/server.js",
   "scripts": {
+    "build": "prisma generate",
     "dev:crm": "nodemon src/server.js",
     "dev:channel": "nodemon src/channel-service/server.js",
     "dev": "node src/server.js",

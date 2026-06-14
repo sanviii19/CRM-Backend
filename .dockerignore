@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.DS_Store
+*.log
+dist/
+test*.js
+check_db.js
+nodemon.json
+README.md

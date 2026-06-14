@@ -1,0 +1,72 @@
+# render.yaml — Render Blueprint for Xeno CRM Backend
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This deploys two services:
+#   1. xeno-crm-api        → src/server.js        (port 5000)
+#   2. xeno-channel-service → src/channel-service/server.js (port 5001)
+#
+# ⚠️  Set the following environment variables in Render Dashboard:
+#   - DATABASE_URL
+#   - DIRECT_URL
+#   - GEMINI_API_KEY
+#   - REDIS_URL  (for channel service)
+#   - FRONTEND_URL (your deployed frontend URL)
+
+services:
+  # ──────────────────────────────────────────
+  # 1. CRM API  (Express + Prisma + Socket.io)
+  # ──────────────────────────────────────────
+  - type: web
+    name: xeno-crm-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.crm
+    dockerContext: .
+    region: singapore   # Change to your preferred region
+    plan: free          # Change to starter/standard for production
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false       # Set this in Render Dashboard (secret)
+      - key: DIRECT_URL
+        sync: false       # Set this in Render Dashboard (secret)
+      - key: GEMINI_API_KEY
+        sync: false       # Set this in Render Dashboard (secret)
+      - key: CHANNEL_SERVICE_URL
+        fromService:
+          name: xeno-channel-service
+          type: web
+          property: host
+      - key: FRONTEND_URL
+        sync: false       # e.g. https://your-frontend.onrender.com
+
+  # ──────────────────────────────────────────
+  # 2. Channel Service  (BullMQ + Redis)
+  # ──────────────────────────────────────────
+  - type: web
+    name: xeno-channel-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile.channel
+    dockerContext: .
+    region: singapore   # Must match the CRM API region
+    plan: free          # Change to starter/standard for production
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CHANNEL_SERVICE_PORT
+        value: 5001
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false       # e.g. redis://default:password@host:6379
+      - key: CRM_URL
+        fromService:
+          name: xeno-crm-api
+          type: web
+          property: host
