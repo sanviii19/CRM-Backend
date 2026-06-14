@@ -60,4 +60,4 @@ EXPOSE 5000
 # Use dumb-init to handle SIGTERM properly (Render sends SIGTERM on deploy/scale)
 ENTRYPOINT ["dumb-init", "--"]
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node src/server.js"]
