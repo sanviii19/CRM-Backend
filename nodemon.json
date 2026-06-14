@@ -1,0 +1,14 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**",
+    "prisma/**",
+    "*.log",
+    "*.test.js"
+  ],
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

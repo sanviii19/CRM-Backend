@@ -1,0 +1,52 @@
+{
+  "name": "crm-backend",
+  "version": "1.0.0",
+  "description": "Xeno Mini CRM — Backend API (Express + PostgreSQL + Prisma)",
+  "main": "src/server.js",
+  "scripts": {
+    "dev:crm": "nodemon src/server.js",
+    "dev:channel": "nodemon src/channel-service/server.js",
+    "dev": "node src/server.js",
+    "start:crm": "node src/server.js",
+    "start:channel": "node src/channel-service/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio",
+    "seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset --force && node prisma/seed.js"
+  },
+  "keywords": [
+    "crm",
+    "xeno",
+    "express",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^6.19.3",
+    "axios": "^1.18.0",
+    "bullmq": "^5.78.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ioredis": "^5.11.1",
+    "prisma": "^6.19.3",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^14.0.0",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "nodemon": "^3.1.14"
+  }
+}

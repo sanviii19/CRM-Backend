@@ -1,0 +1,179 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  city      String?
+  metadata  Json?    // PostgreSQL jsonb — flexible brand-specific attributes
+  tags      String[]
+  createdAt DateTime @default(now())
+
+  orders          Order[]
+  messageStatuses MessageStatus[]
+
+  @@index([city])
+  @@index([createdAt])
+  @@map("customers")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  customerId  String
+  amount      Float
+  status      OrderStatus @default(COMPLETED)
+  purchasedAt DateTime
+
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([customerId])
+  @@index([purchasedAt(sort: Desc)])
+  @@index([customerId, purchasedAt(sort: Desc)]) // CRITICAL compound index for segment queries
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String?
+  name      String
+  category  String?
+  price     Float
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@map("order_items")
+}
+
+model Segment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  // Human-readable explanation for marketers
+  sql         String
+  params      Json
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@map("segments")
+}
+
+model Campaign {
+  id              String         @id @default(uuid())
+  name            String
+  segmentQuery    Json           // stored SQL WHERE clause + params as JSON
+  segmentName     String?
+  messageTemplate String
+  channels        Channel[]      @default([SMS])
+  status          CampaignStatus @default(DRAFT)
+  audienceSize    Int            @default(0)
+
+  // denormalized metrics for fast reads
+  queued    Int @default(0)
+  sent      Int @default(0)
+  delivered Int @default(0)
+  failed    Int @default(0)
+  opened    Int @default(0)
+  read      Int @default(0)
+  clicked   Int @default(0)
+  converted Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  messageStatuses MessageStatus[]
+  timeline        CampaignTimeline[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("campaigns")
+}
+
+model CampaignTimeline {
+  id         String   @id @default(uuid())
+  campaignId String
+  event      String
+  detail     String?
+  timestamp  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("campaign_timelines")
+}
+
+model MessageStatus {
+  id         String       @id @default(uuid())
+  campaignId String
+  customerId String
+  messageId  String       @unique // idempotency key
+  channel    String
+  content    String       // personalized final message text
+  status        MessageState @default(QUEUED)
+  failureReason String?
+  retryCount    Int          @default(0)
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  campaign Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  history  MessageHistory[]
+
+  @@index([campaignId, status]) // fast metric rollups
+  @@index([customerId])
+  @@map("message_statuses")
+}
+
+model MessageHistory {
+  id              String       @id @default(uuid())
+  messageStatusId String
+  status          MessageState
+  failureReason   String?
+  timestamp       DateTime     @default(now())
+
+  messageStatus MessageStatus @relation(fields: [messageStatusId], references: [id], onDelete: Cascade)
+
+  @@map("message_histories")
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+enum CampaignStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum Channel {
+  SMS
+  EMAIL
+  WHATSAPP
+  RCS
+}
+
+enum MessageState {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  OPENED
+  READ
+  CLICKED
+  CONVERTED
+}
