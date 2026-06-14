@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────
+# Stage 1: deps — install production deps only
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install production dependencies only
+RUN npm ci --omit=dev
+
+# ─────────────────────────────────────────────
+# Stage 2: builder — generate Prisma client
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files and ALL deps (incl. prisma CLI)
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy prisma schema
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# ─────────────────────────────────────────────
+# Stage 3: runner — lean production image
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy production node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy generated Prisma client (overwrites placeholder in node_modules)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Copy prisma schema (needed at runtime for migrations check)
+COPY prisma ./prisma
+
+# Copy application source
+COPY src ./src
+COPY package.json ./
+
+# Expose CRM API port
+EXPOSE 5000
+
+# Use dumb-init to handle SIGTERM properly (Render sends SIGTERM on deploy/scale)
+ENTRYPOINT ["dumb-init", "--"]
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]

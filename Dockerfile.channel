@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────
+# Stage 1: deps — install production deps only
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# ─────────────────────────────────────────────
+# Stage 2: builder — generate Prisma client
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# ─────────────────────────────────────────────
+# Stage 3: runner — lean production image
+# ─────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN apk add --no-cache dumb-init
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+COPY prisma ./prisma
+COPY src ./src
+COPY package.json ./
+
+# Expose Channel Service port
+EXPOSE 5001
+
+ENTRYPOINT ["dumb-init", "--"]
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node src/channel-service/server.js"]
