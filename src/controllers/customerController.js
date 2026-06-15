@@ -16,6 +16,13 @@ const listCustomers = asyncHandler(async (req, res) => {
   const where = {};
   if (req.query.city) where.city = req.query.city;
   if (req.query.tag) where.tags = { has: req.query.tag };
+  if (req.query.search) {
+    where.OR = [
+      { name: { contains: req.query.search, mode: 'insensitive' } },
+      { email: { contains: req.query.search, mode: 'insensitive' } },
+      { phone: { contains: req.query.search, mode: 'insensitive' } },
+    ];
+  }
 
   const [customers, total] = await Promise.all([
     customerModel.findMany({ where, skip, take: limit }),
