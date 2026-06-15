@@ -14,7 +14,9 @@ const listCustomers = asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
 
   const where = {};
-  if (req.query.city) where.city = req.query.city;
+  if (req.query.city) {
+    where.city = { contains: req.query.city, mode: 'insensitive' };
+  }
   if (req.query.tag) where.tags = { has: req.query.tag };
   if (req.query.search) {
     where.OR = [

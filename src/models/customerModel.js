@@ -8,7 +8,20 @@ const customerModel = {
    * Find multiple customers with optional filters, pagination, and sorting.
    */
   findMany: ({ where = {}, skip = 0, take = 50, orderBy = { createdAt: 'desc' } } = {}) =>
-    prisma.customer.findMany({ where, skip, take, orderBy }),
+    prisma.customer.findMany({ 
+      where, 
+      skip, 
+      take, 
+      orderBy,
+      include: {
+        orders: {
+          orderBy: { purchasedAt: 'desc' },
+          take: 1,
+          select: { purchasedAt: true, amount: true }
+        },
+        _count: { select: { orders: true } }
+      }
+    }),
 
   /**
    * Count customers matching a filter.
