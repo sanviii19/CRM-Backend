@@ -43,7 +43,8 @@ function startWorker() {
 
   worker.on('failed', (job, err) => {
     const { messageId, customerId, campaignId } = job.data;
-    const isLastAttempt = job.attemptsMade >= job.opts.attempts;
+    const maxAttempts = job.opts?.attempts || 4;
+    const isLastAttempt = job.attemptsMade >= maxAttempts;
 
     if (isLastAttempt) {
       // Extract reason if present: "Delivery failed for XYZ | Reason: User opted out"

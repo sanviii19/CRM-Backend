@@ -26,6 +26,7 @@ async function enqueueBatch(campaignId, messages, callbackUrl) {
     },
     opts: {
       jobId: msg.messageId, // Idempotency — duplicate messageIds are ignored
+      attempts: 4, // Explicitly set to fix worker.on('failed') logic
     },
   }));
 
