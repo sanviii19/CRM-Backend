@@ -225,7 +225,7 @@ Response format (strict JSON, no extra text):
 `;
     userPrompt = `Target Audience: ${targetAudience}\nGoal: ${goal}\nTone: ${tone}`;
   }
-  
+
   const m = getModel();
   logGeminiCall('generateCampaignStrategy');
   const result = await m.generateContent([systemPrompt, userPrompt]);

@@ -39,7 +39,7 @@ async function sendBatch(campaignId) {
             content: m.content,
           })),
         },
-        { timeout: 10000 }
+        { timeout: 60000 }
       );
       console.log(`[ChannelService] Batch ${Math.floor(i / BATCH_SIZE) + 1} dispatched (${batch.length} messages)`);
     } catch (err) {
